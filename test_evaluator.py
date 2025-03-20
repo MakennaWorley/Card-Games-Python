@@ -1,23 +1,20 @@
 import unittest
-from unittest.mock import MagicMock
 from card_enums import *
 from evaluator import *
 
-
 class TestEvaluator(unittest.TestCase):
     class MockCard:
-        """Mock class to simulate a card object with VALUE and SUIT enums."""
-
-        def __init__(self, value, suit):
-            self.value = VALUE[value]
+        """Mock class to simulate a card object using RANK and SUIT enums."""
+        def __init__(self, rank, suit):
+            self.rank = RANK[rank]
+            self.value = self.rank.value
             self.suit = SUIT[suit]
 
         def __repr__(self):
-            return f"{self.value.name} of {self.suit.name}"
+            return f"{self.rank.name} of {self.suit.name}"
 
     class MockPlayer:
         """Mock class to simulate a player object with a hand and folded status."""
-
         def __init__(self, hand, folded=False):
             self.hand = hand
             self.folded = folded
@@ -32,7 +29,7 @@ class TestEvaluator(unittest.TestCase):
     def test_hand_rankings(self):
         """Test that each hand is assigned the correct ranking value."""
         test_cases = [
-            # (Hand Type, Player Hand, Suits, Community Cards, Suits)
+            # (Hand Type, Player Hand Values, Player Hand Suits, Community Cards Values, Community Cards Suits)
             ("Royal Flush", ["ACE", "KING"], ["HEARTS", "HEARTS"],
              ["QUEEN", "JACK", "TEN", "FIVE", "TWO"],
              ["HEARTS", "HEARTS", "HEARTS", "DIAMONDS", "CLUBS"]),
@@ -117,7 +114,7 @@ class TestEvaluator(unittest.TestCase):
                 player2 = self.MockPlayer(self.create_cards(p2_values, p2_suits))
                 with self.subTest(hand1=name1, hand2=name2):
                     winner = Evaluator.determine_winner([player1, player2], community_cards)
-                    self.assertEqual(winner, player1,
+                    self.assertEqual(winner, [player1],
                                      f"{name1} should beat {name2}")
 
         # Additional edge cases for tie-breakers:
@@ -128,7 +125,7 @@ class TestEvaluator(unittest.TestCase):
         player1 = self.MockPlayer(self.create_cards(["TWO", "THREE"], ["CLUBS", "CLUBS"]))  # Completes flush
         player2 = self.MockPlayer(self.create_cards(["FOUR", "FIVE"], ["CLUBS", "DIAMONDS"]))  # Does not complete flush
         winner = Evaluator.determine_winner([player1, player2], board)
-        self.assertEqual(winner, player1, "Board Dominance: player1 wins with flush kicker")
+        self.assertEqual(winner, [player1], "Board Dominance: player1 wins with flush kicker")
 
         # Minimal Improvement: Same board gives a pair; one player's hole cards improve it to two pair.
         board = self.create_cards(["ACE", "ACE", "KING", "QUEEN", "JACK"],
@@ -136,7 +133,7 @@ class TestEvaluator(unittest.TestCase):
         player1 = self.MockPlayer(self.create_cards(["ACE", "FOUR"], ["SPADES", "HEARTS"]))  # Upgrades pair to two pair
         player2 = self.MockPlayer(self.create_cards(["KING", "QUEEN"], ["CLUBS", "SPADES"]))  # Remains with one pair
         winner = Evaluator.determine_winner([player1, player2], board)
-        self.assertEqual(winner, player1, "Minimal Improvement: player1 wins with upgraded two pair")
+        self.assertEqual(winner, [player1], "Minimal Improvement: player1 wins with upgraded two pair")
 
         # Kicker Dispute: Both players have the same primary pair; the kicker decides.
         board = self.create_cards(["ACE", "KING", "QUEEN", "JACK", "NINE"],
@@ -144,7 +141,7 @@ class TestEvaluator(unittest.TestCase):
         player1 = self.MockPlayer(self.create_cards(["ACE", "TEN"], ["HEARTS", "DIAMONDS"]))  # Kicker 10
         player2 = self.MockPlayer(self.create_cards(["ACE", "EIGHT"], ["CLUBS", "SPADES"]))  # Kicker 8
         winner = Evaluator.determine_winner([player1, player2], board)
-        self.assertEqual(winner, player1, "Kicker Dispute: player1 wins with higher kicker")
+        self.assertEqual(winner, [player1], "Kicker Dispute: player1 wins with higher kicker")
 
         # Full House Tie: Two players with full houses, but one has a higher triplet.
         board = self.create_cards(["KING", "KING", "QUEEN", "JACK", "TEN"],
@@ -154,7 +151,7 @@ class TestEvaluator(unittest.TestCase):
         player2 = self.MockPlayer(self.create_cards(["QUEEN", "THREE"], ["SPADES",
                                                                          "DIAMONDS"]))  # Full house with triple Kings but lower pair
         winner = Evaluator.determine_winner([player1, player2], board)
-        self.assertEqual(winner, player1, "Full House Tie: player1 wins with better kickers")
+        self.assertEqual(winner, [player1], "Full House Tie: player1 wins with better kickers")
 
     def test_ties_all_hand_types(self):
         test_cases = [
@@ -294,7 +291,7 @@ class TestEvaluator(unittest.TestCase):
                 player2 = self.MockPlayer(self.create_cards(p2_values, p2_suits))
                 with self.subTest(hand1=hand_type, hand2=hand_type2):
                     winner = Evaluator.determine_winner([player1, player2], community_cards)
-                    self.assertEqual(winner, player1, f"{hand_type} should beat {hand_type2}")
+                    self.assertEqual(winner, [player1], f"{hand_type} should beat {hand_type2}")
 
     def test_determine_winner(self):
         """Test if the correct winner is determined among multiple players."""
@@ -309,7 +306,7 @@ class TestEvaluator(unittest.TestCase):
         )
 
         winner = Evaluator.determine_winner([player1, player2, player3], community_cards)
-        self.assertEqual(winner, player1, "Player with Royal Flush should win")
+        self.assertEqual(winner, [player1], "Player with Royal Flush should win")
 
     def test_folded_player_ignored(self):
         """Test that folded players are ignored when determining the winner."""
@@ -323,8 +320,7 @@ class TestEvaluator(unittest.TestCase):
         )
 
         winner = Evaluator.determine_winner([player1, player2], community_cards)
-        self.assertEqual(winner, player2, "Folded player should be ignored; player2 wins")
-
+        self.assertEqual(winner, [player2], "Folded player should be ignored; player2 wins")
 
 if __name__ == "__main__":
     unittest.main()

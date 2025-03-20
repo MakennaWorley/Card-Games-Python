@@ -19,13 +19,7 @@ class Evaluator:
     @staticmethod
     def card_value(card):
         # Define the correct ranking order: TWO is lowest, ACE is highest.
-        order = [
-            VALUE.TWO, VALUE.THREE, VALUE.FOUR, VALUE.FIVE, VALUE.SIX,
-            VALUE.SEVEN, VALUE.EIGHT, VALUE.NINE, VALUE.TEN, VALUE.JACK,
-            VALUE.QUEEN, VALUE.KING, VALUE.ACE
-        ]
-        # Return the index so that TWO=0, ACE=12.
-        return order.index(card.value)
+        return card.value
 
     # FOUR OF A KIND
     @staticmethod
@@ -152,7 +146,7 @@ class Evaluator:
     @staticmethod
     def evaluate_hand(player, community_cards):
         all_cards = player.hand + community_cards
-        best_hand = (-1, ())  # (rank, tiebreakers)
+        best_hand = (-1, ())
         for combo in combinations(all_cards, 5):
             rank, tiebreaker = Evaluator.get_hand_rank(combo)
             if (rank, tiebreaker) > best_hand:
@@ -161,57 +155,65 @@ class Evaluator:
 
     @staticmethod
     def get_hand_rank(cards):
-        # Convert card values to indices.
-        values = sorted([list(VALUE).index(card.value) for card in cards], reverse=True)
-        suits = [card.suit for card in cards]
+        values = sorted([Evaluator.card_value(c) for c in cards], reverse=True)
+        suits = [c.suit for c in cards]
 
-        is_flush = len(set(suits)) == 1
-        is_straight = all(values[i] - 1 == values[i + 1] for i in range(4))
-        is_royal = is_flush and values == [12, 11, 10, 9, 0]
+        # Check for flush and straight conditions.
+        flush = Evaluator.is_flush(cards)
+        straight = Evaluator.is_straight(cards)
+        straight_high = Evaluator.get_highest_straight_card(cards)
 
-        if is_royal:
+        # Check for Royal Flush (Ace-high flush with the specific values).
+        if flush and set(values) == set([12, 11, 10, 9, 0]):
             return (Evaluator.HAND_RANKS["Royal Flush"], tuple(values))
-        elif is_flush and is_straight:
-            return (Evaluator.HAND_RANKS["Straight Flush"], (Evaluator.get_highest_straight_card(cards),))
-        elif Evaluator.is_four_of_a_kind(cards):
+        # Straight Flush.
+        if flush and straight:
+            return (Evaluator.HAND_RANKS["Straight Flush"], (straight_high,))
+        # Four of a Kind.
+        if Evaluator.is_four_of_a_kind(cards):
             four_rank, kicker = Evaluator.get_four_of_a_kind_info(cards)
             return (Evaluator.HAND_RANKS["Four of a Kind"], (four_rank, kicker))
-        elif Evaluator.is_full_house(cards):
+        # Full House.
+        if Evaluator.is_full_house(cards):
             trip_rank, pair_rank = Evaluator.get_full_house_info(cards)
             return (Evaluator.HAND_RANKS["Full House"], (trip_rank, pair_rank))
-        elif Evaluator.is_flush(cards):
+        # Flush.
+        if flush:
             flush_cards = Evaluator.get_flush_cards(cards)
-            return (Evaluator.HAND_RANKS["Flush"], tuple(sorted([Evaluator.card_value(c) for c in flush_cards], reverse=True)))
-        elif Evaluator.is_straight(cards):
-            return (Evaluator.HAND_RANKS["Straight"], (Evaluator.get_highest_straight_card(cards),))
-        elif Evaluator.is_three_of_a_kind(cards):
+            kicker_values = tuple(sorted([Evaluator.card_value(c) for c in flush_cards], reverse=True))
+            return (Evaluator.HAND_RANKS["Flush"], kicker_values)
+        # Straight.
+        if straight:
+            return (Evaluator.HAND_RANKS["Straight"], (straight_high,))
+        # Three of a Kind.
+        if Evaluator.is_three_of_a_kind(cards):
             trip_rank, kickers = Evaluator.get_three_of_a_kind_info(cards)
             return (Evaluator.HAND_RANKS["Three of a Kind"], (trip_rank,) + tuple(sorted(kickers, reverse=True)))
-        elif Evaluator.is_two_pair(cards):
+        # Two Pair.
+        if Evaluator.is_two_pair(cards):
             high_pair, low_pair, kicker = Evaluator.get_two_pair_info(cards)
             return (Evaluator.HAND_RANKS["Two Pair"], (high_pair, low_pair, kicker))
-        elif Evaluator.is_one_pair(cards):
+        # One Pair.
+        if Evaluator.is_one_pair(cards):
             pair_rank, kickers = Evaluator.get_one_pair_info(cards)
             return (Evaluator.HAND_RANKS["One Pair"], (pair_rank,) + tuple(sorted(kickers, reverse=True)))
-        else:
-            high_cards = sorted([Evaluator.card_value(c) for c in cards], reverse=True)[:5]
-            return (Evaluator.HAND_RANKS["High Card"], tuple(high_cards))
+        # High Card.
+        return (Evaluator.HAND_RANKS["High Card"], tuple(values[:5]))
 
     @staticmethod
     def determine_winner(players, community_cards):
-        best_primary = -1
-        best_kicker = None
-        winner = None
+        players_dict = {}
         for player in players:
-            if not player.folded:
-                primary, kicker = Evaluator.evaluate_hand(player, community_cards)
-                if primary > best_primary:
-                    best_primary = primary
-                    best_kicker = kicker
-                    winner = player
-                elif primary == best_primary:
-                    # Only use the kicker to decide if the primary ranks are equal.
-                    if kicker > best_kicker:
-                        best_kicker = kicker
-                        winner = player
-        return winner
+            if not getattr(player, "folded", False):
+                players_dict[player] = Evaluator.evaluate_hand(player, community_cards)
+        sorted_players = sorted(players_dict.items(), key=lambda item: item[1], reverse=True)
+        if not sorted_players:
+            return []
+        top_score = sorted_players[0][1]
+        winners = []
+        for player, score in sorted_players:
+            if score == top_score:
+                winners.append(player)
+            else:
+                break
+        return winners
