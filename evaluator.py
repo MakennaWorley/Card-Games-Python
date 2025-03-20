@@ -18,49 +18,45 @@ class Evaluator:
 
     @staticmethod
     def card_value(card):
-        # Define the correct ranking order: TWO is lowest, ACE is highest.
-        return card.value
+        rank_index = card.value
+        if rank_index == 0:
+            return 14
+        else:
+            return rank_index + 1
 
     # FOUR OF A KIND
     @staticmethod
     def is_four_of_a_kind(cards):
-        values = [Evaluator.card_value(c) for c in cards]
-        counts = Counter(values)
-        # Accept any group of 4 or more as four-of-a-kind.
+        vals = [Evaluator.card_value(c) for c in cards]
+        counts = Counter(vals)
         return any(count >= 4 for count in counts.values())
 
     @staticmethod
     def get_four_of_a_kind_info(cards):
-        values = [Evaluator.card_value(c) for c in cards]
-        counts = Counter(values)
-        # Get the rank that appears at least 4 times.
+        vals = [Evaluator.card_value(c) for c in cards]
+        counts = Counter(vals)
         four_rank = max(rank for rank, count in counts.items() if count >= 4)
-        # Find the highest kicker that is not part of the four-of-a-kind.
-        kicker_candidates = [rank for rank, count in counts.items() if rank != four_rank]
-        kicker = max(kicker_candidates) if kicker_candidates else 0  # Default to lowest if none found
+        kicker_candidates = [r for r, cnt in counts.items() if r != four_rank]
+        kicker = max(kicker_candidates) if kicker_candidates else 0
         return (four_rank, kicker)
 
     # FULL HOUSE
     @staticmethod
     def is_full_house(cards):
-        values = [Evaluator.card_value(c) for c in cards]
-        counts = Counter(values)
-        # Full house: one rank appears at least 3 times and another (can be the same if 4 or 5 of a kind) appears at least 2 times.
+        vals = [Evaluator.card_value(c) for c in cards]
+        counts = Counter(vals)
         has_three = any(count >= 3 for count in counts.values())
-        # For the pair part, we want a rank different from the triple.
-        pairs = [rank for rank, count in counts.items() if count >= 2]
+        pairs = [rank for rank, cnt in counts.items() if cnt >= 2]
         return has_three and len(pairs) >= 2
 
     @staticmethod
     def get_full_house_info(cards):
-        values = [Evaluator.card_value(c) for c in cards]
-        counts = Counter(values)
-        # Choose the highest rank with count>=3 as the triplet.
-        trip_rank = max(rank for rank, count in counts.items() if count >= 3)
-        # For the pair, choose the highest rank (other than trip_rank) with count>=2.
-        pair_candidates = [rank for rank, count in counts.items() if rank != trip_rank and count >= 2]
+        vals = [Evaluator.card_value(c) for c in cards]
+        counts = Counter(vals)
+        three_rank = max(r for r, cnt in counts.items() if cnt >= 3)
+        pair_candidates = [r for r, cnt in counts.items() if r != three_rank and cnt >= 2]
         pair_rank = max(pair_candidates) if pair_candidates else 0
-        return (trip_rank, pair_rank)
+        return (three_rank, pair_rank)
 
     # FLUSH
     @staticmethod
@@ -70,93 +66,94 @@ class Evaluator:
 
     @staticmethod
     def get_flush_cards(cards):
-        # Returns the cards sorted descending by their value.
-        return sorted(cards, key=Evaluator.card_value, reverse=True)
+        return sorted(cards, key=lambda c: Evaluator.card_value(c), reverse=True)
 
     # STRAIGHT
     @staticmethod
     def is_straight(cards):
-        # Get unique card values sorted in descending order.
-        values = sorted(set(Evaluator.card_value(c) for c in cards), reverse=True)
+        values = sorted({Evaluator.card_value(c) for c in cards})
         if len(values) < 5:
             return False
         for i in range(len(values) - 4):
-            if values[i] - values[i + 4] == 4:
+            if values[i + 4] - values[i] == 4:
                 return True
-        # Ace-low straight: Ace, 2, 3, 4, 5 (Assumes ACE index is highest, TWO is index 0)
-        if 12 in values and all(x in values for x in [0, 1, 2, 3]):
+        if {14, 2, 3, 4, 5}.issubset(values):
             return True
         return False
 
     @staticmethod
     def get_highest_straight_card(cards):
-        values = sorted(set(Evaluator.card_value(c) for c in cards), reverse=True)
+        values = sorted({Evaluator.card_value(c) for c in cards})
         for i in range(len(values) - 4):
-            if values[i] - values[i + 4] == 4:
-                return values[i]
-        if 12 in values and all(x in values for x in [0, 1, 2, 3]):
-            return 3  # In Ace-low straight, highest card is 5 (index 3)
+            if values[i + 4] - values[i] == 4:
+                return values[i+4]
+        if {14, 2, 3, 4, 5}.issubset(values):
+            return 5  # In Ace-low straight, highest card is 5 (index 3)
         return None
 
     # THREE OF A KIND (excluding full house)
     @staticmethod
     def is_three_of_a_kind(cards):
-        counts = Counter(Evaluator.card_value(c) for c in cards)
-        # We want exactly one triplet in a 5-card combination (which wouldn't form a full house)
-        return any(count == 3 for count in counts.values())
+        vals = [Evaluator.card_value(c) for c in cards]
+        counts = Counter(vals)
+        has_three = any(count == 3 for count in counts.values())
+        if not has_three:
+            return False
+        return not Evaluator.is_full_house(cards)
 
     @staticmethod
     def get_three_of_a_kind_info(cards):
-        values = [Evaluator.card_value(c) for c in cards]
-        counts = Counter(values)
-        trip_rank = max(rank for rank, count in counts.items() if count == 3)
-        kickers = sorted((rank for rank, count in counts.items() if count == 1), reverse=True)
-        return (trip_rank, kickers)
+        vals = [Evaluator.card_value(c) for c in cards]
+        counts = Counter(vals)
+        three_rank = max(r for r, cnt in counts.items() if cnt == 3)
+        kickers = sorted((r for r, cnt in counts.items() if r != three_rank), reverse=True)
+        return (three_rank, kickers)
 
     # TWO PAIR
     @staticmethod
     def is_two_pair(cards):
-        counts = Counter(Evaluator.card_value(c) for c in cards)
-        pairs = [rank for rank, count in counts.items() if count == 2]
+        vals = [Evaluator.card_value(c) for c in cards]
+        counts = Counter(vals)
+        pairs = [r for r, cnt in counts.items() if cnt == 2]
         return len(pairs) == 2
 
     @staticmethod
     def get_two_pair_info(cards):
-        values = [Evaluator.card_value(c) for c in cards]
-        counts = Counter(values)
-        pairs = sorted([rank for rank, count in counts.items() if count == 2], reverse=True)
-        kicker = max(rank for rank, count in counts.items() if count == 1)
+        vals = [Evaluator.card_value(c) for c in cards]
+        counts = Counter(vals)
+        pairs = sorted([r for r, cnt in counts.items() if cnt == 2], reverse=True)
+        kicker = max(r for r, cnt in counts.items() if cnt == 1)
         return (pairs[0], pairs[1], kicker)
 
     # ONE PAIR (excluding higher multiplicities)
     @staticmethod
     def is_one_pair(cards):
-        counts = Counter(Evaluator.card_value(c) for c in cards)
-        pairs = [rank for rank, count in counts.items() if count == 2]
+        vals = [Evaluator.card_value(c) for c in cards]
+        counts = Counter(vals)
+        pairs = [cnt for cnt in counts.values() if cnt == 2]
         return len(pairs) == 1 and max(counts.values()) == 2
 
     @staticmethod
     def get_one_pair_info(cards):
-        values = [Evaluator.card_value(c) for c in cards]
-        counts = Counter(values)
-        pair_rank = max(rank for rank, count in counts.items() if count == 2)
-        kickers = sorted([rank for rank, count in counts.items() if count == 1], reverse=True)
+        vals = [Evaluator.card_value(c) for c in cards]
+        counts = Counter(vals)
+        pair_rank = max(r for r, cnt in counts.items() if cnt == 2)
+        kickers = sorted([r for r, cnt in counts.items() if cnt == 1], reverse=True)
         return (pair_rank, kickers)
 
     @staticmethod
     def evaluate_hand(player, community_cards):
         all_cards = player.hand + community_cards
-        best_hand = (-1, ())
+        best = (-1, ())
         for combo in combinations(all_cards, 5):
-            rank, tiebreaker = Evaluator.get_hand_rank(combo)
-            if (rank, tiebreaker) > best_hand:
-                best_hand = (rank, tiebreaker)
-        return best_hand
+            rank_info = Evaluator.get_hand_rank(combo)
+            if rank_info > best:
+                best = rank_info
+        return best
 
     @staticmethod
     def get_hand_rank(cards):
         values = sorted([Evaluator.card_value(c) for c in cards], reverse=True)
-        suits = [c.suit for c in cards]
 
         # Check for flush and straight conditions.
         flush = Evaluator.is_flush(cards)
@@ -164,7 +161,7 @@ class Evaluator:
         straight_high = Evaluator.get_highest_straight_card(cards)
 
         # Check for Royal Flush (Ace-high flush with the specific values).
-        if flush and set(values) == set([12, 11, 10, 9, 0]):
+        if flush and straight and straight_high == 14:
             return (Evaluator.HAND_RANKS["Royal Flush"], tuple(values))
         # Straight Flush.
         if flush and straight:
@@ -179,41 +176,46 @@ class Evaluator:
             return (Evaluator.HAND_RANKS["Full House"], (trip_rank, pair_rank))
         # Flush.
         if flush:
-            flush_cards = Evaluator.get_flush_cards(cards)
-            kicker_values = tuple(sorted([Evaluator.card_value(c) for c in flush_cards], reverse=True))
-            return (Evaluator.HAND_RANKS["Flush"], kicker_values)
+            flush_cards_sorted = Evaluator.get_flush_cards(cards)
+            ranks_desc = sorted(
+                [Evaluator.card_value(c) for c in flush_cards_sorted],
+                reverse=True
+            )
+            return Evaluator.HAND_RANKS["Flush"], tuple(ranks_desc)
         # Straight.
         if straight:
             return (Evaluator.HAND_RANKS["Straight"], (straight_high,))
         # Three of a Kind.
         if Evaluator.is_three_of_a_kind(cards):
-            trip_rank, kickers = Evaluator.get_three_of_a_kind_info(cards)
-            return (Evaluator.HAND_RANKS["Three of a Kind"], (trip_rank,) + tuple(sorted(kickers, reverse=True)))
+            trip_rank, kicker_list = Evaluator.get_three_of_a_kind_info(cards)
+            return (Evaluator.HAND_RANKS["Three of a Kind"],
+                    (trip_rank,) + tuple(kicker_list))
         # Two Pair.
         if Evaluator.is_two_pair(cards):
             high_pair, low_pair, kicker = Evaluator.get_two_pair_info(cards)
             return (Evaluator.HAND_RANKS["Two Pair"], (high_pair, low_pair, kicker))
         # One Pair.
         if Evaluator.is_one_pair(cards):
-            pair_rank, kickers = Evaluator.get_one_pair_info(cards)
-            return (Evaluator.HAND_RANKS["One Pair"], (pair_rank,) + tuple(sorted(kickers, reverse=True)))
+            pair_rank, kicker_list = Evaluator.get_one_pair_info(cards)
+            return (Evaluator.HAND_RANKS["One Pair"],
+                    (pair_rank,) + tuple(kicker_list))
         # High Card.
-        return (Evaluator.HAND_RANKS["High Card"], tuple(values[:5]))
+        return (Evaluator.HAND_RANKS["High Card"], tuple(values))
 
     @staticmethod
     def determine_winner(players, community_cards):
-        players_dict = {}
-        for player in players:
-            if not getattr(player, "folded", False):
-                players_dict[player] = Evaluator.evaluate_hand(player, community_cards)
-        sorted_players = sorted(players_dict.items(), key=lambda item: item[1], reverse=True)
-        if not sorted_players:
+        player_ranks = {}
+        for p in players:
+            if not getattr(p, "folded", False):
+                player_ranks[p] = Evaluator.evaluate_hand(p, community_cards)
+        sorted_by_best = sorted(player_ranks.items(), key=lambda x: x[1], reverse=True)
+        if not sorted_by_best:
             return []
-        top_score = sorted_players[0][1]
-        winners = []
-        for player, score in sorted_players:
-            if score == top_score:
-                winners.append(player)
+        top_score = sorted_by_best[0][1]
+        winners = [sorted_by_best[0][0]]
+        for i in range(1, len(sorted_by_best)):
+            if sorted_by_best[i][1] == top_score:
+                winners.append(sorted_by_best[i][0])
             else:
                 break
         return winners

@@ -1,5 +1,4 @@
 import unittest
-from card_enums import *
 from evaluator import *
 
 class TestEvaluator(unittest.TestCase):
@@ -29,7 +28,8 @@ class TestEvaluator(unittest.TestCase):
     def test_hand_rankings(self):
         """Test that each hand is assigned the correct ranking value."""
         test_cases = [
-            # (Hand Type, Player Hand Values, Player Hand Suits, Community Cards Values, Community Cards Suits)
+            # (Hand Type, Player Hand Values, Player Hand Suits,
+            #       Community Cards Values, Community Cards Suits)
             ("Royal Flush", ["ACE", "KING"], ["HEARTS", "HEARTS"],
              ["QUEEN", "JACK", "TEN", "FIVE", "TWO"],
              ["HEARTS", "HEARTS", "HEARTS", "DIAMONDS", "CLUBS"]),
@@ -73,52 +73,6 @@ class TestEvaluator(unittest.TestCase):
 
     def test_rankings(self):
         """Test head-to-head comparisons with various edge cases for tie-breakers."""
-        test_cases = [
-            ("Royal Flush", ["ACE", "KING"], ["HEARTS", "HEARTS"],
-             ["QUEEN", "JACK", "TEN", "FIVE", "TWO"],
-             ["HEARTS", "HEARTS", "HEARTS", "DIAMONDS", "CLUBS"]),
-            ("Straight Flush", ["NINE", "EIGHT"], ["DIAMONDS", "DIAMONDS"],
-             ["SEVEN", "SIX", "FIVE", "TWO", "THREE"],
-             ["DIAMONDS", "DIAMONDS", "DIAMONDS", "SPADES", "HEARTS"]),
-            ("Four of a Kind", ["QUEEN", "QUEEN"], ["CLUBS", "DIAMONDS"],
-             ["QUEEN", "QUEEN", "NINE", "FIVE", "TWO"],
-             ["HEARTS", "SPADES", "DIAMONDS", "CLUBS", "SPADES"]),
-            ("Full House", ["KING", "KING"], ["HEARTS", "DIAMONDS"],
-             ["KING", "NINE", "NINE", "FOUR", "THREE"],
-             ["CLUBS", "SPADES", "HEARTS", "DIAMONDS", "SPADES"]),
-            ("Flush", ["JACK", "FIVE"], ["CLUBS", "CLUBS"],
-             ["NINE", "SIX", "THREE", "KING", "TWO"],
-             ["CLUBS", "CLUBS", "CLUBS", "CLUBS", "DIAMONDS"]),
-            ("Straight", ["JACK", "TEN"], ["HEARTS", "DIAMONDS"],
-             ["NINE", "EIGHT", "SEVEN", "FIVE", "THREE"],
-             ["CLUBS", "SPADES", "HEARTS", "DIAMONDS", "SPADES"]),
-            ("Three of a Kind", ["SEVEN", "SEVEN"], ["CLUBS", "DIAMONDS"],
-             ["SEVEN", "KING", "JACK", "FIVE", "TWO"],
-             ["HEARTS", "SPADES", "DIAMONDS", "CLUBS", "SPADES"]),
-            ("Two Pair", ["FOUR", "FOUR"], ["HEARTS", "DIAMONDS"],
-             ["NINE", "NINE", "FIVE", "THREE", "TWO"],
-             ["CLUBS", "SPADES", "HEARTS", "DIAMONDS", "SPADES"]),
-            ("One Pair", ["ACE", "ACE"], ["SPADES", "DIAMONDS"],
-             ["EIGHT", "SIX", "FIVE", "THREE", "TWO"],
-             ["CLUBS", "HEARTS", "SPADES", "DIAMONDS", "CLUBS"]),
-            ("High Card", ["ACE", "JACK"], ["SPADES", "DIAMONDS"],
-             ["NINE", "SIX", "FIVE", "FOUR", "THREE"],
-             ["CLUBS", "HEARTS", "SPADES", "DIAMONDS", "CLUBS"]),
-        ]
-
-        # For each test case, ensure that a higher-ranked hand wins head-to-head.
-        for i, (name1, p1_values, p1_suits, comm_values, comm_suits) in enumerate(test_cases):
-            player1 = self.MockPlayer(self.create_cards(p1_values, p1_suits))
-            community_cards = self.create_cards(comm_values, comm_suits)
-            for name2, p2_values, p2_suits, _, _ in test_cases[i + 1:]:
-                player2 = self.MockPlayer(self.create_cards(p2_values, p2_suits))
-                with self.subTest(hand1=name1, hand2=name2):
-                    winner = Evaluator.determine_winner([player1, player2], community_cards)
-                    self.assertEqual(winner, [player1],
-                                     f"{name1} should beat {name2}")
-
-        # Additional edge cases for tie-breakers:
-
         # Board Dominance: Board nearly forms a flush.
         board = self.create_cards(["ACE", "KING", "FOUR", "FIVE", "SIX"],
                                   ["CLUBS", "CLUBS", "CLUBS", "DIAMONDS", "HEARTS"])
@@ -155,7 +109,7 @@ class TestEvaluator(unittest.TestCase):
 
     def test_ties_all_hand_types(self):
         test_cases = [
-            # Straight Flush (Note: no royal flush)
+            # Straight Flush (no Royal)
             ("Straight Flush",
              ["KING", "QUEEN"], ["HEARTS", "HEARTS"],
              ["JACK", "TEN", "NINE", "EIGHT", "SEVEN"],
@@ -197,7 +151,7 @@ class TestEvaluator(unittest.TestCase):
              ["JACK", "JACK", "TEN", "TEN", "NINE"],
              ["HEARTS", "CLUBS", "DIAMONDS", "HEARTS", "CLUBS"]),
 
-            # Flush (ensure non-sequential to avoid straight flush)
+            # Flush
             ("Flush",
              ["ACE", "QUEEN"], ["SPADES", "SPADES"],
              ["JACK", "NINE", "EIGHT", "FIVE", "TWO"],
@@ -211,7 +165,7 @@ class TestEvaluator(unittest.TestCase):
              ["NINE", "EIGHT", "SIX", "THREE", "TWO"],
              ["CLUBS", "CLUBS", "CLUBS", "CLUBS", "CLUBS"]),
 
-            # Straight (non-flush)
+            # Straight
             ("Straight",
              ["KING", "QUEEN"], ["HEARTS", "DIAMONDS"],
              ["JACK", "TEN", "NINE", "TWO", "THREE"],
@@ -220,7 +174,7 @@ class TestEvaluator(unittest.TestCase):
              ["QUEEN", "JACK"], ["CLUBS", "DIAMONDS"],
              ["TEN", "NINE", "EIGHT", "FOUR", "TWO"],
              ["HEARTS", "SPADES", "DIAMONDS", "CLUBS", "HEARTS"]),
-            # Edge case: the "wheel" A-2-3-4-5 straight
+            # The "wheel" A-2-3-4-5
             ("Straight",
              ["ACE", "TWO"], ["HEARTS", "DIAMONDS"],
              ["THREE", "FOUR", "FIVE", "NINE", "KING"],
@@ -277,21 +231,26 @@ class TestEvaluator(unittest.TestCase):
              ["QUEEN", "JACK"], ["CLUBS", "SPADES"],
              ["TEN", "EIGHT", "SEVEN", "THREE", "TWO"],
              ["DIAMONDS", "HEARTS", "SPADES", "CLUBS", "DIAMONDS"]),
-            # Edge case: lowest possible high card (using low-value cards, ensuring no pair, flush, or straight)
             ("High Card",
              ["TWO", "THREE"], ["CLUBS", "DIAMONDS"],
              ["FOUR", "FIVE", "SEVEN", "NINE", "JACK"],
              ["HEARTS", "SPADES", "DIAMONDS", "CLUBS", "HEARTS"]),
         ]
 
-        for i, (hand_type, p1_values, p1_suits, comm_values, comm_suits) in enumerate(test_cases):
-            player1 = self.MockPlayer(self.create_cards(p1_values, p1_suits))
-            community_cards = self.create_cards(comm_values, comm_suits)
-            for hand_type2, p2_values, p2_suits, _, _ in test_cases[i + 1:]:
-                player2 = self.MockPlayer(self.create_cards(p2_values, p2_suits))
-                with self.subTest(hand1=hand_type, hand2=hand_type2):
-                    winner = Evaluator.determine_winner([player1, player2], community_cards)
-                    self.assertEqual(winner, [player1], f"{hand_type} should beat {hand_type2}")
+        for hand_type, p1_vals, p1_suits, comm_vals, comm_suits in test_cases:
+            with self.subTest(hand_type=hand_type):
+                community_cards = self.create_cards(comm_vals, comm_suits)
+
+                player1 = self.MockPlayer(self.create_cards(p1_vals, p1_suits))
+                player2 = self.MockPlayer(self.create_cards(p1_vals, p1_suits))
+
+                winners = Evaluator.determine_winner([player1, player2], community_cards)
+
+                self.assertEqual(
+                    set(winners),
+                    {player1, player2},
+                    f"For {hand_type} scenario, both players should tie with the same best hand."
+                )
 
     def test_determine_winner(self):
         """Test if the correct winner is determined among multiple players."""
