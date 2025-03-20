@@ -20,3 +20,15 @@ class VALUE(Enum):
     JACK = "Jack"
     QUEEN = "Queen"
     KING = "King"
+
+class BUTTON(Enum):
+    DEALER = "Dealer"
+    SB = "Small Blind"
+    BB = "Big Blind"
+    PLAYER = "Player"
+
+class PHASE(Enum):
+    PF = "Pre-Flop"
+    FLOP = "Flop"
+    TURN = "Turn"
+    RIVER = "River"
