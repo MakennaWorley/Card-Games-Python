@@ -1,23 +1,19 @@
 import unittest
-from unittest.mock import MagicMock
-from card_enums import *
 from evaluator import *
-
 
 class TestEvaluator(unittest.TestCase):
     class MockCard:
-        """Mock class to simulate a card object with VALUE and SUIT enums."""
-
-        def __init__(self, value, suit):
-            self.value = VALUE[value]
+        """Mock class to simulate a card object using RANK and SUIT enums."""
+        def __init__(self, rank, suit):
+            self.rank = RANK[rank]
+            self.value = self.rank.value
             self.suit = SUIT[suit]
 
         def __repr__(self):
-            return f"{self.value.name} of {self.suit.name}"
+            return f"{self.rank.name} of {self.suit.name}"
 
     class MockPlayer:
         """Mock class to simulate a player object with a hand and folded status."""
-
         def __init__(self, hand, folded=False):
             self.hand = hand
             self.folded = folded
@@ -32,7 +28,8 @@ class TestEvaluator(unittest.TestCase):
     def test_hand_rankings(self):
         """Test that each hand is assigned the correct ranking value."""
         test_cases = [
-            # (Hand Type, Player Hand, Suits, Community Cards, Suits)
+            # (Hand Type, Player Hand Values, Player Hand Suits,
+            #       Community Cards Values, Community Cards Suits)
             ("Royal Flush", ["ACE", "KING"], ["HEARTS", "HEARTS"],
              ["QUEEN", "JACK", "TEN", "FIVE", "TWO"],
              ["HEARTS", "HEARTS", "HEARTS", "DIAMONDS", "CLUBS"]),
@@ -76,83 +73,184 @@ class TestEvaluator(unittest.TestCase):
 
     def test_rankings(self):
         """Test head-to-head comparisons with various edge cases for tie-breakers."""
-        test_cases = [
-            ("Royal Flush", ["ACE", "KING"], ["HEARTS", "HEARTS"],
-             ["QUEEN", "JACK", "TEN", "FIVE", "TWO"],
-             ["HEARTS", "HEARTS", "HEARTS", "DIAMONDS", "CLUBS"]),
-            ("Straight Flush", ["NINE", "EIGHT"], ["DIAMONDS", "DIAMONDS"],
-             ["SEVEN", "SIX", "FIVE", "TWO", "THREE"],
-             ["DIAMONDS", "DIAMONDS", "DIAMONDS", "SPADES", "HEARTS"]),
-            ("Four of a Kind", ["QUEEN", "QUEEN"], ["CLUBS", "DIAMONDS"],
-             ["QUEEN", "QUEEN", "NINE", "FIVE", "TWO"],
-             ["HEARTS", "SPADES", "DIAMONDS", "CLUBS", "SPADES"]),
-            ("Full House", ["KING", "KING"], ["HEARTS", "DIAMONDS"],
-             ["KING", "NINE", "NINE", "FOUR", "THREE"],
-             ["CLUBS", "SPADES", "HEARTS", "DIAMONDS", "SPADES"]),
-            ("Flush", ["JACK", "FIVE"], ["CLUBS", "CLUBS"],
-             ["NINE", "SIX", "THREE", "KING", "TWO"],
-             ["CLUBS", "CLUBS", "CLUBS", "CLUBS", "DIAMONDS"]),
-            ("Straight", ["JACK", "TEN"], ["HEARTS", "DIAMONDS"],
-             ["NINE", "EIGHT", "SEVEN", "FIVE", "THREE"],
-             ["CLUBS", "SPADES", "HEARTS", "DIAMONDS", "SPADES"]),
-            ("Three of a Kind", ["SEVEN", "SEVEN"], ["CLUBS", "DIAMONDS"],
-             ["SEVEN", "KING", "JACK", "FIVE", "TWO"],
-             ["HEARTS", "SPADES", "DIAMONDS", "CLUBS", "SPADES"]),
-            ("Two Pair", ["FOUR", "FOUR"], ["HEARTS", "DIAMONDS"],
-             ["NINE", "NINE", "FIVE", "THREE", "TWO"],
-             ["CLUBS", "SPADES", "HEARTS", "DIAMONDS", "SPADES"]),
-            ("One Pair", ["ACE", "ACE"], ["SPADES", "DIAMONDS"],
-             ["EIGHT", "SIX", "FIVE", "THREE", "TWO"],
-             ["CLUBS", "HEARTS", "SPADES", "DIAMONDS", "CLUBS"]),
-            ("High Card", ["ACE", "JACK"], ["SPADES", "DIAMONDS"],
-             ["NINE", "SIX", "FIVE", "FOUR", "THREE"],
-             ["CLUBS", "HEARTS", "SPADES", "DIAMONDS", "CLUBS"]),
-        ]
-
-        # For each test case, ensure that a higher-ranked hand wins head-to-head.
-        for i, (name1, p1_values, p1_suits, comm_values, comm_suits) in enumerate(test_cases):
-            player1 = self.MockPlayer(self.create_cards(p1_values, p1_suits))
-            community_cards = self.create_cards(comm_values, comm_suits)
-            for name2, p2_values, p2_suits, _, _ in test_cases[i + 1:]:
-                player2 = self.MockPlayer(self.create_cards(p2_values, p2_suits))
-                with self.subTest(hand1=name1, hand2=name2):
-                    winner = Evaluator.determine_winner([player1, player2], community_cards)
-                    self.assertEqual(winner, player1,
-                                     f"{name1} should beat {name2}")
-
-        # Additional edge cases for tie-breakers:
-
         # Board Dominance: Board nearly forms a flush.
         board = self.create_cards(["ACE", "KING", "FOUR", "FIVE", "SIX"],
                                   ["CLUBS", "CLUBS", "CLUBS", "DIAMONDS", "HEARTS"])
         player1 = self.MockPlayer(self.create_cards(["TWO", "THREE"], ["CLUBS", "CLUBS"]))  # Completes flush
         player2 = self.MockPlayer(self.create_cards(["FOUR", "FIVE"], ["CLUBS", "DIAMONDS"]))  # Does not complete flush
         winner = Evaluator.determine_winner([player1, player2], board)
-        self.assertEqual(winner, player1, "Board Dominance: player1 wins with flush kicker")
+        self.assertEqual(winner, [player1], "Board Dominance: player1 wins with flush kicker")
 
         # Minimal Improvement: Same board gives a pair; one player's hole cards improve it to two pair.
         board = self.create_cards(["ACE", "ACE", "KING", "QUEEN", "JACK"],
                                   ["DIAMONDS", "DIAMONDS", "SPADES", "CLUBS", "HEARTS"])
         player1 = self.MockPlayer(self.create_cards(["ACE", "FOUR"], ["SPADES", "HEARTS"]))  # Upgrades pair to two pair
-        player2 = self.MockPlayer(self.create_cards(["KING", "QUEEN"], ["CLUBS", "SPADES"]))   # Remains with one pair
+        player2 = self.MockPlayer(self.create_cards(["KING", "QUEEN"], ["CLUBS", "SPADES"]))  # Remains with one pair
         winner = Evaluator.determine_winner([player1, player2], board)
-        self.assertEqual(winner, player1, "Minimal Improvement: player1 wins with upgraded two pair")
+        self.assertEqual(winner, [player1], "Minimal Improvement: player1 wins with upgraded two pair")
 
         # Kicker Dispute: Both players have the same primary pair; the kicker decides.
         board = self.create_cards(["ACE", "KING", "QUEEN", "JACK", "NINE"],
                                   ["CLUBS", "SPADES", "DIAMONDS", "CLUBS", "HEARTS"])
-        player1 = self.MockPlayer(self.create_cards(["ACE", "TEN"], ["HEARTS", "DIAMONDS"]))   # Kicker 10
-        player2 = self.MockPlayer(self.create_cards(["ACE", "EIGHT"], ["CLUBS", "SPADES"]))      # Kicker 8
+        player1 = self.MockPlayer(self.create_cards(["ACE", "TEN"], ["HEARTS", "DIAMONDS"]))  # Kicker 10
+        player2 = self.MockPlayer(self.create_cards(["ACE", "EIGHT"], ["CLUBS", "SPADES"]))  # Kicker 8
         winner = Evaluator.determine_winner([player1, player2], board)
-        self.assertEqual(winner, player1, "Kicker Dispute: player1 wins with higher kicker")
+        self.assertEqual(winner, [player1], "Kicker Dispute: player1 wins with higher kicker")
 
         # Full House Tie: Two players with full houses, but one has a higher triplet.
         board = self.create_cards(["KING", "KING", "QUEEN", "JACK", "TEN"],
                                   ["DIAMONDS", "HEARTS", "CLUBS", "SPADES", "DIAMONDS"])
-        player1 = self.MockPlayer(self.create_cards(["KING", "TWO"], ["CLUBS", "HEARTS"]))  # Full house with triple Kings
-        player2 = self.MockPlayer(self.create_cards(["QUEEN", "THREE"], ["SPADES", "DIAMONDS"]))  # Full house with triple Kings but lower pair
+        player1 = self.MockPlayer(
+            self.create_cards(["KING", "TWO"], ["CLUBS", "HEARTS"]))  # Full house with triple Kings
+        player2 = self.MockPlayer(self.create_cards(["QUEEN", "THREE"], ["SPADES",
+                                                                         "DIAMONDS"]))  # Full house with triple Kings but lower pair
         winner = Evaluator.determine_winner([player1, player2], board)
-        self.assertEqual(winner, player1, "Full House Tie: player1 wins with better kickers")
+        self.assertEqual(winner, [player1], "Full House Tie: player1 wins with better kickers")
+
+    def test_ties_all_hand_types(self):
+        test_cases = [
+            # Straight Flush (no Royal)
+            ("Straight Flush",
+             ["KING", "QUEEN"], ["HEARTS", "HEARTS"],
+             ["JACK", "TEN", "NINE", "EIGHT", "SEVEN"],
+             ["HEARTS", "HEARTS", "HEARTS", "HEARTS", "HEARTS"]),
+            ("Straight Flush",
+             ["QUEEN", "JACK"], ["DIAMONDS", "DIAMONDS"],
+             ["TEN", "NINE", "EIGHT", "SEVEN", "SIX"],
+             ["DIAMONDS", "DIAMONDS", "DIAMONDS", "DIAMONDS", "DIAMONDS"]),
+            ("Straight Flush",
+             ["JACK", "TEN"], ["CLUBS", "CLUBS"],
+             ["NINE", "EIGHT", "SEVEN", "SIX", "FIVE"],
+             ["CLUBS", "CLUBS", "CLUBS", "CLUBS", "CLUBS"]),
+
+            # Four of a Kind
+            ("Four of a Kind",
+             ["ACE", "ACE"], ["HEARTS", "DIAMONDS"],
+             ["ACE", "ACE", "ACE", "KING", "QUEEN"],
+             ["CLUBS", "SPADES", "HEARTS", "DIAMONDS", "SPADES"]),
+            ("Four of a Kind",
+             ["KING", "KING"], ["CLUBS", "DIAMONDS"],
+             ["KING", "KING", "KING", "QUEEN", "JACK"],
+             ["HEARTS", "SPADES", "DIAMONDS", "CLUBS", "SPADES"]),
+            ("Four of a Kind",
+             ["QUEEN", "QUEEN"], ["SPADES", "CLUBS"],
+             ["QUEEN", "QUEEN", "QUEEN", "JACK", "TEN"],
+             ["DIAMONDS", "HEARTS", "SPADES", "CLUBS", "DIAMONDS"]),
+
+            # Full House
+            ("Full House",
+             ["KING", "KING"], ["HEARTS", "CLUBS"],
+             ["KING", "KING", "QUEEN", "QUEEN", "JACK"],
+             ["SPADES", "DIAMONDS", "HEARTS", "DIAMONDS", "CLUBS"]),
+            ("Full House",
+             ["QUEEN", "QUEEN"], ["DIAMONDS", "HEARTS"],
+             ["QUEEN", "QUEEN", "JACK", "JACK", "TEN"],
+             ["CLUBS", "SPADES", "HEARTS", "DIAMONDS", "SPADES"]),
+            ("Full House",
+             ["JACK", "JACK"], ["SPADES", "DIAMONDS"],
+             ["JACK", "JACK", "TEN", "TEN", "NINE"],
+             ["HEARTS", "CLUBS", "DIAMONDS", "HEARTS", "CLUBS"]),
+
+            # Flush
+            ("Flush",
+             ["ACE", "QUEEN"], ["SPADES", "SPADES"],
+             ["JACK", "NINE", "EIGHT", "FIVE", "TWO"],
+             ["SPADES", "SPADES", "SPADES", "SPADES", "SPADES"]),
+            ("Flush",
+             ["KING", "JACK"], ["HEARTS", "HEARTS"],
+             ["TEN", "EIGHT", "SEVEN", "FOUR", "TWO"],
+             ["HEARTS", "HEARTS", "HEARTS", "HEARTS", "HEARTS"]),
+            ("Flush",
+             ["QUEEN", "TEN"], ["CLUBS", "CLUBS"],
+             ["NINE", "EIGHT", "SIX", "THREE", "TWO"],
+             ["CLUBS", "CLUBS", "CLUBS", "CLUBS", "CLUBS"]),
+
+            # Straight
+            ("Straight",
+             ["KING", "QUEEN"], ["HEARTS", "DIAMONDS"],
+             ["JACK", "TEN", "NINE", "TWO", "THREE"],
+             ["SPADES", "SPADES", "HEARTS", "DIAMONDS", "CLUBS"]),
+            ("Straight",
+             ["QUEEN", "JACK"], ["CLUBS", "DIAMONDS"],
+             ["TEN", "NINE", "EIGHT", "FOUR", "TWO"],
+             ["HEARTS", "SPADES", "DIAMONDS", "CLUBS", "HEARTS"]),
+            # The "wheel" A-2-3-4-5
+            ("Straight",
+             ["ACE", "TWO"], ["HEARTS", "DIAMONDS"],
+             ["THREE", "FOUR", "FIVE", "NINE", "KING"],
+             ["SPADES", "CLUBS", "DIAMONDS", "HEARTS", "SPADES"]),
+
+            # Three of a Kind
+            ("Three of a Kind",
+             ["ACE", "ACE"], ["DIAMONDS", "HEARTS"],
+             ["ACE", "KING", "QUEEN", "TEN", "NINE"],
+             ["CLUBS", "SPADES", "DIAMONDS", "HEARTS", "CLUBS"]),
+            ("Three of a Kind",
+             ["KING", "KING"], ["CLUBS", "DIAMONDS"],
+             ["KING", "QUEEN", "JACK", "TEN", "EIGHT"],
+             ["HEARTS", "SPADES", "DIAMONDS", "CLUBS", "SPADES"]),
+            ("Three of a Kind",
+             ["QUEEN", "QUEEN"], ["SPADES", "CLUBS"],
+             ["QUEEN", "JACK", "TEN", "NINE", "EIGHT"],
+             ["DIAMONDS", "HEARTS", "SPADES", "CLUBS", "DIAMONDS"]),
+
+            # Two Pair
+            ("Two Pair",
+             ["ACE", "KING"], ["HEARTS", "DIAMONDS"],
+             ["ACE", "KING", "QUEEN", "JACK", "TEN"],
+             ["CLUBS", "SPADES", "DIAMONDS", "HEARTS", "CLUBS"]),
+            ("Two Pair",
+             ["QUEEN", "JACK"], ["CLUBS", "SPADES"],
+             ["QUEEN", "JACK", "TEN", "NINE", "EIGHT"],
+             ["HEARTS", "DIAMONDS", "CLUBS", "SPADES", "HEARTS"]),
+            ("Two Pair",
+             ["TEN", "NINE"], ["DIAMONDS", "HEARTS"],
+             ["TEN", "NINE", "EIGHT", "SEVEN", "SIX"],
+             ["CLUBS", "SPADES", "DIAMONDS", "HEARTS", "CLUBS"]),
+
+            # One Pair
+            ("One Pair",
+             ["ACE", "ACE"], ["SPADES", "HEARTS"],
+             ["KING", "QUEEN", "JACK", "TEN", "NINE"],
+             ["DIAMONDS", "CLUBS", "HEARTS", "SPADES", "DIAMONDS"]),
+            ("One Pair",
+             ["KING", "KING"], ["CLUBS", "DIAMONDS"],
+             ["QUEEN", "JACK", "TEN", "NINE", "EIGHT"],
+             ["HEARTS", "SPADES", "DIAMONDS", "CLUBS", "SPADES"]),
+            ("One Pair",
+             ["QUEEN", "QUEEN"], ["DIAMONDS", "CLUBS"],
+             ["JACK", "TEN", "NINE", "EIGHT", "SEVEN"],
+             ["SPADES", "HEARTS", "DIAMONDS", "CLUBS", "SPADES"]),
+
+            # High Card
+            ("High Card",
+             ["ACE", "KING"], ["HEARTS", "DIAMONDS"],
+             ["QUEEN", "JACK", "NINE", "FOUR", "TWO"],
+             ["CLUBS", "SPADES", "DIAMONDS", "HEARTS", "CLUBS"]),
+            ("High Card",
+             ["QUEEN", "JACK"], ["CLUBS", "SPADES"],
+             ["TEN", "EIGHT", "SEVEN", "THREE", "TWO"],
+             ["DIAMONDS", "HEARTS", "SPADES", "CLUBS", "DIAMONDS"]),
+            ("High Card",
+             ["TWO", "THREE"], ["CLUBS", "DIAMONDS"],
+             ["FOUR", "FIVE", "SEVEN", "NINE", "JACK"],
+             ["HEARTS", "SPADES", "DIAMONDS", "CLUBS", "HEARTS"]),
+        ]
+
+        for hand_type, p1_vals, p1_suits, comm_vals, comm_suits in test_cases:
+            with self.subTest(hand_type=hand_type):
+                community_cards = self.create_cards(comm_vals, comm_suits)
+
+                player1 = self.MockPlayer(self.create_cards(p1_vals, p1_suits))
+                player2 = self.MockPlayer(self.create_cards(p1_vals, p1_suits))
+
+                winners = Evaluator.determine_winner([player1, player2], community_cards)
+
+                self.assertEqual(
+                    set(winners),
+                    {player1, player2},
+                    f"For {hand_type} scenario, both players should tie with the same best hand."
+                )
 
     def test_determine_winner(self):
         """Test if the correct winner is determined among multiple players."""
@@ -167,11 +265,12 @@ class TestEvaluator(unittest.TestCase):
         )
 
         winner = Evaluator.determine_winner([player1, player2, player3], community_cards)
-        self.assertEqual(winner, player1, "Player with Royal Flush should win")
+        self.assertEqual(winner, [player1], "Player with Royal Flush should win")
 
     def test_folded_player_ignored(self):
         """Test that folded players are ignored when determining the winner."""
-        player1 = self.MockPlayer(self.create_cards(["ACE", "KING"], ["HEARTS", "HEARTS"]), folded=True)  # Folded Royal Flush
+        player1 = self.MockPlayer(self.create_cards(["ACE", "KING"], ["HEARTS", "HEARTS"]),
+                                  folded=True)  # Folded Royal Flush
         player2 = self.MockPlayer(self.create_cards(["NINE", "EIGHT"], ["DIAMONDS", "DIAMONDS"]))  # Straight Flush
 
         community_cards = self.create_cards(
@@ -180,7 +279,7 @@ class TestEvaluator(unittest.TestCase):
         )
 
         winner = Evaluator.determine_winner([player1, player2], community_cards)
-        self.assertEqual(winner, player2, "Folded player should be ignored; player2 wins")
+        self.assertEqual(winner, [player2], "Folded player should be ignored; player2 wins")
 
 if __name__ == "__main__":
     unittest.main()
