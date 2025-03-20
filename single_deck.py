@@ -33,7 +33,7 @@ class SingleDeck:
         table = {suit: [" " for _ in ranks] for suit in suits}
 
         for card in self.cards:
-            table[card.suit.value][ranks.index(card.value.value)] = "X"
+            table[card.suit.value][ranks.index(card.value)] = "X"
 
         df = pd.DataFrame(table, index=ranks)
 
@@ -46,8 +46,8 @@ class SingleDeck:
         print(df.to_string())
 
 
-'''deck = Deck()
+deck = SingleDeck()
 deck.shuffle()
 print(deck.draw_card())
 print(f"Remaining cards: {len(deck.cards)}")
-deck.display_table()'''
+deck.display_table()
