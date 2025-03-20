@@ -10,7 +10,7 @@ class Card:
         return self.rank.value
 
     def __str__(self):
-        return f"{self.rank.name.capitalize()} of {self.suit.name.capitalize()}"
+        return f"{self.rank.name.capitalize()} of {self.suit.value}"
 
     def change_rank(self, new_rank: RANK):
         self.rank = new_rank
@@ -22,11 +22,18 @@ class Card:
         self.rank = new_rank
         self.suit = new_suit
 
-card = Card(RANK.ACE, SUIT.HEARTS)
-print(card)
-card.change_rank(RANK.TWO)
-print(card)
-card.change_suit(SUIT.DIAMONDS)
-print(card)
-card.change_card(RANK.ACE, SUIT.CLUBS)
-print(card)
+if __name__ == "__main__":
+    card = Card(RANK.ACE, SUIT.HEARTS)
+    print(card)
+    print("-" * 30)
+
+    card.change_rank(RANK.TWO)
+    print(card)
+    print("-" * 30)
+
+    card.change_suit(SUIT.DIAMONDS)
+    print(card)
+    print("-" * 30)
+
+    card.change_card(RANK.ACE, SUIT.CLUBS)
+    print(card)

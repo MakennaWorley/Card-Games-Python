@@ -7,6 +7,7 @@ class SUIT(Enum):
     SPADES = "♠ Spades"
 
 class RANK(Enum):
+    ACE = 14
     TWO = 2
     THREE = 3
     FOUR = 4
@@ -19,7 +20,6 @@ class RANK(Enum):
     JACK = 11
     QUEEN = 12
     KING = 13
-    ACE = 14
 
 class BUTTON(Enum):
     DEALER = "Dealer"
