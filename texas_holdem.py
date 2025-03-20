@@ -39,7 +39,12 @@ class TexasHoldemGame:
         self.betting_round()
 
         winner = Evaluator.determine_winner(self.players, self.dealer.community_cards)
-        print(f"Winner: {winner.name}")
+        if isinstance(winner, list):
+            winner_names = ", ".join([w.name for w in winner])
+            print(f"Winners: {winner_names}")
+        else:
+            print(f"Winner: {winner.name}")
+
         self.table.distribute_pot(winner)
 
     def betting_round(self):
@@ -48,3 +53,9 @@ class TexasHoldemGame:
                 bet = min(100, player.chips)  # Placeholder bet logic
                 player.place_bet(bet)
         self.table.collect_bets()
+
+if __name__ == "__main__":
+    player_names = ["Alice", "Bob", "Charlie"]
+    for _ in range(10):
+        game = TexasHoldemGame(player_names)
+        game.play_round()
