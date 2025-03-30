@@ -1,4 +1,3 @@
-from card import *
 from card_enums import *
 from single_deck import SingleDeck
 import random

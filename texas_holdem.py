@@ -1,12 +1,12 @@
 from evaluator import *
-from player import *
+from ai_player import *
 from dealer import *
 from table import *
 from card_enums import PHASE, BUTTON
 
 class TexasHoldemGame:
-    def __init__(self, player_names, starting_chips=1000, verbose=False):
-        self.players = [RandomPlayer(name, chips=starting_chips) for name in player_names]
+    def __init__(self, players, verbose=False):
+        self.players = players
         self.dealer = Dealer()
         self.table = Table(self.players)
         self.verbose = verbose
@@ -272,22 +272,12 @@ class TexasHoldemGame:
         and determine a winner (or tie).
         """
         winners = Evaluator.determine_winner(self.players, self.dealer.community_cards)
-        # If tie returns a list, else single Player
-        if isinstance(winners, list):
-            # multiple winners or single in a list
-            if len(winners) == 1:
-                # it's still a list but just has one winner
-                if self.verbose:
-                    print("Winner:", winners[0].name)
-            else:
-                # true tie with multiple winners
-                if self.verbose:
-                    print("Tie between:", ", ".join(w.name for w in winners))
+        if len(winners) == 1:
+            # it's still a list but just has one winner
+            print("Winner:", winners[0].name)
         else:
-            # 'winners' is a single Player
-            winners = [winners]  # <--- wrap the single winner in a list
-            if self.verbose:
-                print("Winner:", winners[0].name)
+            # true tie with multiple winners
+            print("Tie between:", ", ".join(w.name for w in winners))
 
         self.table.distribute_pot(winners)
 
@@ -307,9 +297,16 @@ class TexasHoldemGame:
         self.button_position = (self.button_position + 1) % len(self.players)
 
 if __name__ == "__main__":
-    player_names = ["Alice", "Bob", "Charlie"]
-    game = TexasHoldemGame(player_names, verbose=True)
-    for i in range(3):
+
+    players_list = [
+        RandomPlayer("Alice", 1000),
+        RandomPlayer("Bob", 1000),
+        MinimaxPlayer("Charlie", 1000),
+        AlphaBetaPlayer("David", 1000),
+    ]
+
+    game = TexasHoldemGame(players_list, verbose=False)
+    for i in range(10):
         print(f"\n===== ROUND {i+1} =====")
         game.play_round()
         # Show chip counts
