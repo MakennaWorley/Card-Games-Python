@@ -26,6 +26,7 @@ class BUTTON(Enum):
     SB = "Small Blind"
     BB = "Big Blind"
     PLAYER = "Player"
+    NONE = "None"
 
 class PHASE(Enum):
     PF = "Pre-Flop"

@@ -48,11 +48,17 @@ class Table:
 
     def distribute_pot(self, winners):
         if not winners:
-            raise ValueError("There must be at least one winner to distribute the pot.")
+            #raise ValueError("There must be at least one winner to distribute the pot.")
+            print("All players folded. No winner this round.")
+            self.pot = 0
+            return
 
         share = self.pot // len(winners)
         for winner in winners:
             winner.chips += share
+        self.pot = 0
+
+    def reset_pot(self):
         self.pot = 0
 
 if __name__ == '__main__':
