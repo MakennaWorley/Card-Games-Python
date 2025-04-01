@@ -44,7 +44,7 @@ class TexasHoldemGame:
             return
 
         # 5) Flop
-        self.dealer.deal_community_cards(3)
+        self.dealer.deal_community_cards(3, players=self.players)
         self._log_community_cards(PHASE.FLOP)
         self._betting_round(PHASE.FLOP)
         if self._check_for_default_winner():
@@ -52,7 +52,7 @@ class TexasHoldemGame:
             return
 
         # 6) Turn
-        self.dealer.deal_community_cards(1)
+        self.dealer.deal_community_cards(1, players=self.players)
         self._log_community_cards(PHASE.TURN)
         self._betting_round(PHASE.TURN)
         if self._check_for_default_winner():
@@ -60,7 +60,7 @@ class TexasHoldemGame:
             return
 
         # 7) River
-        self.dealer.deal_community_cards(1)
+        self.dealer.deal_community_cards(1, players=self.players)
         self._log_community_cards(PHASE.RIVER)
         self._betting_round(PHASE.RIVER)
         if self._check_for_default_winner():

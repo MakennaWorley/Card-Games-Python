@@ -92,7 +92,8 @@ class MinimaxPlayer(Player):
         return (200 * (strength - 0.5)) - 50
 
     def estimate_strength(self):
-        return Evaluator.get_hand_rank(self.hand)
+        cards = self.hand + self.community_cards
+        return Evaluator.get_hand_rank(cards)
 
 #===================================================================================================================================
 
@@ -180,5 +181,6 @@ class AlphaBetaPlayer(Player):
         strength = self.estimate_strength()
         return (200 * (strength - 0.5)) - 50
 
-    def estimate_strength(self, dealer):
-        return Evaluator.get_hand_rank(self.hand)
+    def estimate_strength(self):
+        cards = self.hand + self.community_cards
+        return Evaluator.get_hand_rank(cards)

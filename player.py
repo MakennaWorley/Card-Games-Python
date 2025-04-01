@@ -1,12 +1,14 @@
-from card_enums import BUTTON
+from card_enums import BUTTON, RANK, SUIT
+from card import Card
 from single_deck import SingleDeck
 import random
 
 class Player:
-    def __init__(self, name, chips=1000, position=BUTTON.PLAYER, verbose=False):
+    def __init__(self, name, chips=1000, community_cards=[], position=BUTTON.PLAYER, verbose=False):
         self.name = name
         self.chips = chips
         self.hand = []
+        self.community_cards = community_cards
         self.current_bet = 0
         self.folded = False
         self.position = position
@@ -31,6 +33,9 @@ class Player:
 
     def hand_str(self):
         return ", ".join(str(card) for card in self.hand)
+
+    def community_cards_str(self):
+        return ", ".join(str(card) for card in self.community_cards)
 
 
 class RandomPlayer(Player):
@@ -191,8 +196,10 @@ if __name__ == '__main__':
     deck.show_top_cards(5)
     print("-" * 30)
 
-    player = Player("Alice", chips=500, position=BUTTON.DEALER)
+    cc = Card(RANK.ACE, SUIT.HEARTS)
+
+    player = Player("Alice", chips=500, position=BUTTON.DEALER, community_cards=[cc])
 
     dealt_cards = [deck.draw_card(), deck.draw_card()]
     player.receive_cards(dealt_cards)
-    print(f"{player.name}'s hand: {player.hand_str()}")
+    print(f"{player.name}'s hand: {player.hand_str()} and community cards: {player.community_cards_str()}")
