@@ -1,15 +1,17 @@
-from evaluator import *
-from player import *
-from dealer import *
-from table import *
+from evaluator import EvaluatorTable
+from ai_player import MinimaxPlayer, AlphaBetaPlayer
+from player import RandomPlayer
+from dealer import Dealer
+from table import Table
 from card_enums import PHASE, BUTTON
 
 class TexasHoldemGame:
-    def __init__(self, player_names, starting_chips=1000, verbose=False):
-        self.players = [RandomPlayer(name, chips=starting_chips) for name in player_names]
+    def __init__(self, players, verbose=False, testing=False):
+        self.players = players
         self.dealer = Dealer()
         self.table = Table(self.players)
         self.verbose = verbose
+        self.testing = testing
         self.button_position = 0
 
     def play_round(self):
@@ -42,7 +44,7 @@ class TexasHoldemGame:
             return
 
         # 5) Flop
-        self.dealer.deal_community_cards(3)
+        self.dealer.deal_community_cards(3, players=self.players)
         self._log_community_cards(PHASE.FLOP)
         self._betting_round(PHASE.FLOP)
         if self._check_for_default_winner():
@@ -50,7 +52,7 @@ class TexasHoldemGame:
             return
 
         # 6) Turn
-        self.dealer.deal_community_cards(1)
+        self.dealer.deal_community_cards(1, players=self.players)
         self._log_community_cards(PHASE.TURN)
         self._betting_round(PHASE.TURN)
         if self._check_for_default_winner():
@@ -58,7 +60,7 @@ class TexasHoldemGame:
             return
 
         # 7) River
-        self.dealer.deal_community_cards(1)
+        self.dealer.deal_community_cards(1, players=self.players)
         self._log_community_cards(PHASE.RIVER)
         self._betting_round(PHASE.RIVER)
         if self._check_for_default_winner():
@@ -271,23 +273,15 @@ class TexasHoldemGame:
         Evaluate the remaining players' hole cards + community
         and determine a winner (or tie).
         """
-        winners = Evaluator.determine_winner(self.players, self.dealer.community_cards)
-        # If tie returns a list, else single Player
-        if isinstance(winners, list):
-            # multiple winners or single in a list
-            if len(winners) == 1:
-                # it's still a list but just has one winner
-                if self.verbose:
-                    print("Winner:", winners[0].name)
-            else:
-                # true tie with multiple winners
-                if self.verbose:
-                    print("Tie between:", ", ".join(w.name for w in winners))
-        else:
-            # 'winners' is a single Player
-            winners = [winners]  # <--- wrap the single winner in a list
-            if self.verbose:
+        winners = EvaluatorTable.determine_winner(self.players, self.dealer.community_cards)
+        if len(winners) == 1:
+            # it's still a list but just has one winner
+            if not self.testing:
                 print("Winner:", winners[0].name)
+        else:
+            # true tie with multiple winners
+            if not self.testing:
+                print("Tie between:", ", ".join(w.name for w in winners))
 
         self.table.distribute_pot(winners)
 
@@ -307,9 +301,16 @@ class TexasHoldemGame:
         self.button_position = (self.button_position + 1) % len(self.players)
 
 if __name__ == "__main__":
-    player_names = ["Alice", "Bob", "Charlie"]
-    game = TexasHoldemGame(player_names, verbose=True)
-    for i in range(3):
+
+    players_list = [
+        RandomPlayer("Alice", 1000),
+        RandomPlayer("Bob", 1000),
+        MinimaxPlayer("Charlie", 1000),
+        AlphaBetaPlayer("David", 1000),
+    ]
+
+    game = TexasHoldemGame(players_list, verbose=False)
+    for i in range(10):
         print(f"\n===== ROUND {i+1} =====")
         game.play_round()
         # Show chip counts

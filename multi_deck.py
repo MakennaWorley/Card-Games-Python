@@ -1,4 +1,6 @@
-from single_deck import *
+from single_deck import SingleDeck
+from card import Card
+from card_enums import RANK, SUIT
 
 class MultiDeck(SingleDeck):
     def __init__(self, num=1):

@@ -1,6 +1,6 @@
 from multi_deck import MultiDeck
 from single_deck import SingleDeck
-from card_enums import *
+from card_enums import BUTTON
 from player import Player
 
 class Dealer:
@@ -20,9 +20,15 @@ class Dealer:
             for player in players:
                 player.receive_cards([self.deck.draw_card()])
 
-    def deal_community_cards(self, count):
+    def deal_community_cards(self, count, players):
         self.deck.draw_card()  # Burn a card
-        self.community_cards.extend([self.deck.draw_card() for _ in range(count)])
+        new_cards = [self.deck.draw_card() for _ in range(count)]
+        self.community_cards.extend(new_cards)
+        # Update each player's community cards if a players list is provided.
+        if players is not None:
+            for player in players:
+                # Make a copy to avoid unintended modifications.
+                player.community_cards = self.community_cards.copy()
 
     def reset_deck(self, num_decks=1):
         if num_decks < 1:
@@ -47,15 +53,20 @@ if __name__ == '__main__':
 
     dealer.deal_hole_cards(players)
     for player in players:
-        print(f"{player.name}'s hand:")
-        for card in player.hand:
-            print(f"  {card}")
+        print(f"{player.name}'s hand: {player.hand_str()} and community cards: {player.community_cards_str()}")
         print("-" * 30)
 
-    dealer.deal_community_cards(3)
+    # Pass the players list so that their community_cards get updated.
+    dealer.deal_community_cards(3, players)
+    print("Community Cards on the Table:")
     for card in dealer.community_cards:
         print(f"  {card}")
     print("-" * 30)
+
+    # Confirm that each player now has the community cards updated.
+    for player in players:
+        print(f"{player.name}'s hand: {player.hand_str()} and community cards: {player.community_cards_str()}")
+        print("-" * 30)
 
     dealer.deck.display_table()
     dealer.reset_deck(2)
