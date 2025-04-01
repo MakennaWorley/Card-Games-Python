@@ -1,6 +1,5 @@
 from itertools import combinations
 from collections import Counter
-from card_enums import *
 
 class Evaluator:
     HAND_RANKS = {
@@ -202,12 +201,13 @@ class Evaluator:
         # High Card.
         return (Evaluator.HAND_RANKS["High Card"], tuple(values))
 
+class EvaluatorTable(Evaluator):
     @staticmethod
     def determine_winner(players, community_cards):
         player_ranks = {}
         for p in players:
             if not getattr(p, "folded", False):
-                player_ranks[p] = Evaluator.evaluate_hand(p, community_cards)
+                player_ranks[p] = EvaluatorTable.evaluate_hand(p, community_cards)
         sorted_by_best = sorted(player_ranks.items(), key=lambda x: x[1], reverse=True)
         if not sorted_by_best:
             return []

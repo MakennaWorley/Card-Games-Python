@@ -1,5 +1,6 @@
 import unittest
-from evaluator import *
+from evaluator import Evaluator, EvaluatorTable
+from card_enums import RANK, SUIT
 
 class TestEvaluator(unittest.TestCase):
     class MockCard:
@@ -78,7 +79,7 @@ class TestEvaluator(unittest.TestCase):
                                   ["CLUBS", "CLUBS", "CLUBS", "DIAMONDS", "HEARTS"])
         player1 = self.MockPlayer(self.create_cards(["TWO", "THREE"], ["CLUBS", "CLUBS"]))  # Completes flush
         player2 = self.MockPlayer(self.create_cards(["FOUR", "FIVE"], ["CLUBS", "DIAMONDS"]))  # Does not complete flush
-        winner = Evaluator.determine_winner([player1, player2], board)
+        winner = EvaluatorTable.determine_winner([player1, player2], board)
         self.assertEqual(winner, [player1], "Board Dominance: player1 wins with flush kicker")
 
         # Minimal Improvement: Same board gives a pair; one player's hole cards improve it to two pair.
@@ -86,7 +87,7 @@ class TestEvaluator(unittest.TestCase):
                                   ["DIAMONDS", "DIAMONDS", "SPADES", "CLUBS", "HEARTS"])
         player1 = self.MockPlayer(self.create_cards(["ACE", "FOUR"], ["SPADES", "HEARTS"]))  # Upgrades pair to two pair
         player2 = self.MockPlayer(self.create_cards(["KING", "QUEEN"], ["CLUBS", "SPADES"]))  # Remains with one pair
-        winner = Evaluator.determine_winner([player1, player2], board)
+        winner = EvaluatorTable.determine_winner([player1, player2], board)
         self.assertEqual(winner, [player1], "Minimal Improvement: player1 wins with upgraded two pair")
 
         # Kicker Dispute: Both players have the same primary pair; the kicker decides.
@@ -94,7 +95,7 @@ class TestEvaluator(unittest.TestCase):
                                   ["CLUBS", "SPADES", "DIAMONDS", "CLUBS", "HEARTS"])
         player1 = self.MockPlayer(self.create_cards(["ACE", "TEN"], ["HEARTS", "DIAMONDS"]))  # Kicker 10
         player2 = self.MockPlayer(self.create_cards(["ACE", "EIGHT"], ["CLUBS", "SPADES"]))  # Kicker 8
-        winner = Evaluator.determine_winner([player1, player2], board)
+        winner = EvaluatorTable.determine_winner([player1, player2], board)
         self.assertEqual(winner, [player1], "Kicker Dispute: player1 wins with higher kicker")
 
         # Full House Tie: Two players with full houses, but one has a higher triplet.
@@ -104,7 +105,7 @@ class TestEvaluator(unittest.TestCase):
             self.create_cards(["KING", "TWO"], ["CLUBS", "HEARTS"]))  # Full house with triple Kings
         player2 = self.MockPlayer(self.create_cards(["QUEEN", "THREE"], ["SPADES",
                                                                          "DIAMONDS"]))  # Full house with triple Kings but lower pair
-        winner = Evaluator.determine_winner([player1, player2], board)
+        winner = EvaluatorTable.determine_winner([player1, player2], board)
         self.assertEqual(winner, [player1], "Full House Tie: player1 wins with better kickers")
 
     def test_ties_all_hand_types(self):
@@ -244,7 +245,7 @@ class TestEvaluator(unittest.TestCase):
                 player1 = self.MockPlayer(self.create_cards(p1_vals, p1_suits))
                 player2 = self.MockPlayer(self.create_cards(p1_vals, p1_suits))
 
-                winners = Evaluator.determine_winner([player1, player2], community_cards)
+                winners = EvaluatorTable.determine_winner([player1, player2], community_cards)
 
                 self.assertEqual(
                     set(winners),
@@ -264,7 +265,7 @@ class TestEvaluator(unittest.TestCase):
             ["HEARTS", "HEARTS", "HEARTS", "DIAMONDS", "CLUBS"]
         )
 
-        winner = Evaluator.determine_winner([player1, player2, player3], community_cards)
+        winner = EvaluatorTable.determine_winner([player1, player2, player3], community_cards)
         self.assertEqual(winner, [player1], "Player with Royal Flush should win")
 
     def test_folded_player_ignored(self):
@@ -278,7 +279,7 @@ class TestEvaluator(unittest.TestCase):
             ["HEARTS", "HEARTS", "HEARTS", "DIAMONDS", "CLUBS"]
         )
 
-        winner = Evaluator.determine_winner([player1, player2], community_cards)
+        winner = EvaluatorTable.determine_winner([player1, player2], community_cards)
         self.assertEqual(winner, [player2], "Folded player should be ignored; player2 wins")
 
 if __name__ == "__main__":

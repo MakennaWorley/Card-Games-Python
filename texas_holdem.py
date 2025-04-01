@@ -1,7 +1,8 @@
-from evaluator import *
-from ai_player import *
-from dealer import *
-from table import *
+from evaluator import EvaluatorTable
+from ai_player import MinimaxPlayer, AlphaBetaPlayer
+from player import RandomPlayer
+from dealer import Dealer
+from table import Table
 from card_enums import PHASE, BUTTON
 
 class TexasHoldemGame:
@@ -271,7 +272,7 @@ class TexasHoldemGame:
         Evaluate the remaining players' hole cards + community
         and determine a winner (or tie).
         """
-        winners = Evaluator.determine_winner(self.players, self.dealer.community_cards)
+        winners = EvaluatorTable.determine_winner(self.players, self.dealer.community_cards)
         if len(winners) == 1:
             # it's still a list but just has one winner
             print("Winner:", winners[0].name)

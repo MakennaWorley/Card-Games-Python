@@ -1,8 +1,8 @@
 import random
 import pandas as pd
 
-from card import *
-from card_enums import *
+from card import Card
+from card_enums import RANK, SUIT
 
 class SingleDeck:
     def __init__(self):

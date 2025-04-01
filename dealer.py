@@ -1,6 +1,6 @@
 from multi_deck import MultiDeck
 from single_deck import SingleDeck
-from card_enums import *
+from card_enums import BUTTON
 from player import Player
 
 class Dealer:

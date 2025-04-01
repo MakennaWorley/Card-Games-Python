@@ -1,4 +1,4 @@
-from card_enums import *
+from card_enums import BUTTON
 from single_deck import SingleDeck
 import random
 

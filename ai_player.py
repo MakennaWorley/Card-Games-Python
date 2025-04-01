@@ -1,5 +1,6 @@
-import math, random
-from player import *
+import math
+from player import Player
+from evaluator import Evaluator
 
 class MinimaxPlayer(Player):
     def make_decision(self, highest_bet, call_amount):
@@ -90,8 +91,8 @@ class MinimaxPlayer(Player):
         strength = self.estimate_strength()
         return (200 * (strength - 0.5)) - 50
 
-    def estimate_strength(self): #---------------------------------------------------------------------------
-        return random.random()
+    def estimate_strength(self):
+        return Evaluator.get_hand_rank(self.hand)
 
 #===================================================================================================================================
 
@@ -179,5 +180,5 @@ class AlphaBetaPlayer(Player):
         strength = self.estimate_strength()
         return (200 * (strength - 0.5)) - 50
 
-    def estimate_strength(self):
-        return random.random()
+    def estimate_strength(self, dealer):
+        return Evaluator.get_hand_rank(self.hand)
