@@ -6,11 +6,12 @@ from table import Table
 from card_enums import PHASE, BUTTON
 
 class TexasHoldemGame:
-    def __init__(self, players, verbose=False):
+    def __init__(self, players, verbose=False, testing=False):
         self.players = players
         self.dealer = Dealer()
         self.table = Table(self.players)
         self.verbose = verbose
+        self.testing = testing
         self.button_position = 0
 
     def play_round(self):
@@ -275,10 +276,12 @@ class TexasHoldemGame:
         winners = EvaluatorTable.determine_winner(self.players, self.dealer.community_cards)
         if len(winners) == 1:
             # it's still a list but just has one winner
-            print("Winner:", winners[0].name)
+            if not self.testing:
+                print("Winner:", winners[0].name)
         else:
             # true tie with multiple winners
-            print("Tie between:", ", ".join(w.name for w in winners))
+            if not self.testing:
+                print("Tie between:", ", ".join(w.name for w in winners))
 
         self.table.distribute_pot(winners)
 
